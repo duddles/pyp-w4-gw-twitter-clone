@@ -1,35 +1,14 @@
-import os
-
-from flask import Flask
-
-app = Flask(__name__)
-app.config['SECRET_KEY'] = "kljasdno9asud89uy981uoaisjdoiajsdm89uas980d"
-
-"""
-/login
-GET: show login form
-POST: authenticate
-
-/:user-handle
-GET: see all user tweets and new tweet form
-POST (auth): write a new tweet
-
-/profile
-GET (auth): see user profile data
-POST (auth): update user profile data
-
-/tweets/:tweet-id
-GET: see one tweet detail
-DELETE: remove tweet
-"""
-
 import sqlite3
 from hashlib import md5
 from functools import wraps
-from flask import (g, request, session, redirect, render_template, flash,
-                   abort, jsonify, Response, url_for)
+from flask import Flask
+from flask import (g, request, session, redirect, render_template,
+                   flash, url_for)
 
 from twitter_clone import settings
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = "kljasdno9asud89uy981uoaisjdoiajsdm89uas980d"
 
 
 def connect_db():
@@ -62,7 +41,8 @@ def login():
         username = request.form['username']
         password = request.form['password']
         cursor = g.db.execute(
-            'SELECT id, password FROM user WHERE username=:username;', {'username': username})
+            'SELECT id, password FROM user WHERE username=:username;',
+            {'username': username})
         user = cursor.fetchone()
         if user and user[1] == md5(password).hexdigest():
             session['user_id'] = user[0]
@@ -90,7 +70,11 @@ def logout():
 @login_required
 def profile():
     if request.method == 'POST':
-        query = 'UPDATE user SET first_name=:first_name, last_name=:last_name, birth_date=:birth_date WHERE username=:username;'
+        query = """
+            UPDATE user
+            SET first_name=:first_name, last_name=:last_name, birth_date=:birth_date
+            WHERE username=:username;
+        """
         params = {
             'first_name': request.form.get('first_name'),
             'last_name': request.form.get('last_name'),
@@ -143,9 +127,14 @@ def feed(username):
 
     # fetch all tweets from given username
     cursor = g.db.execute(
-        'SELECT u.username, u.first_name, u.last_name, t.id, t.created, t.content FROM user AS u JOIN tweet t ON (u.id=t.user_id) WHERE u.username=:username ORDER BY datetime(created) DESC;',
+        """
+        SELECT u.username, u.first_name, u.last_name, t.id, t.created, t.content
+        FROM user AS u JOIN tweet t ON (u.id=t.user_id)
+        WHERE u.username=:username ORDER BY datetime(created) DESC;
+        """,
         {'username': username})
-    tweets = [dict(username=row[0], id=row[3], created=row[4], content=row[5]) for row in cursor.fetchall()]
+    tweets = [dict(username=row[0], id=row[3], created=row[4], content=row[5])
+              for row in cursor.fetchall()]
     return render_template('feed.html', feed_username=username, tweets=tweets)
 
 
@@ -164,3 +153,10 @@ def tweet(tweet_id):
     g.db.commit()
     flash('Your tweet was successfully deleted!', 'success')
     return redirect(next)
+
+
+@app.route('/', methods=['GET'])
+@login_required
+def index():
+    if 'username' in session:
+        return redirect('/{}'.format(session['username']))
