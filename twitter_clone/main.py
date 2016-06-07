@@ -5,19 +5,16 @@ from flask import Flask
 from flask import (g, request, session, redirect, render_template,
                    flash, url_for)
 
-from twitter_clone import settings
-
 app = Flask(__name__)
-app.config['SECRET_KEY'] = "kljasdno9asud89uy981uoaisjdoiajsdm89uas980d"
 
 
-def connect_db():
-    return sqlite3.connect(settings.DATABASE_NAME)
+def connect_db(db_name):
+    return sqlite3.connect(db_name)
 
 
 @app.before_request
 def before_request():
-    g.db = connect_db()
+    g.db = connect_db(app.config['DATABASE'][1])
 
 
 def login_required(f):
