@@ -8,7 +8,11 @@ CREATE TABLE user (
   username TEXT NOT NULL,
   password TEXT NOT NULL,
   first_name TEXT,
-  last_name TEXT
+  last_name TEXT,
+  birth_date DATE,
+  CHECK (
+      length("birth_date") = 10
+  )
 );
 
 DROP TABLE if exists tweet;
@@ -24,6 +28,6 @@ CREATE TABLE tweet (
   )
 );
 
---INSERT INTO "user" ("id", "username", "password") VALUES (10, "martinzugnoni", "81dc9bdb52d04dc20036dbd8313ed055");
+--INSERT INTO "user" ("id", "username", "password", "birth_date") VALUES (10, "martinzugnoni", "81dc9bdb52d04dc20036dbd8313ed055", "2016-01-26");
 --INSERT INTO "tweet" ("id", "user_id", "content") VALUES (1, 10, "longer than twenty characters");
---SELECT * FROM tweet;
+--SELECT * FROM user;

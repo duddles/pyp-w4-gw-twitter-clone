@@ -25,8 +25,9 @@ DELETE: remove tweet
 
 import sqlite3
 from hashlib import md5
+from functools import wraps
 from flask import (g, request, session, redirect, render_template, flash,
-                   abort, jsonify, Response)
+                   abort, jsonify, Response, url_for)
 
 from twitter_clone import settings
 
@@ -38,6 +39,15 @@ def connect_db():
 @app.before_request
 def before_request():
     g.db = connect_db()
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in session:
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -66,6 +76,7 @@ def login():
 
 
 @app.route('/logout')
+@login_required
 def logout():
     next = request.args.get('next', '/')
     session.pop('username', None)
@@ -73,6 +84,28 @@ def logout():
     return redirect(next)
 
 
-@app.route('/', methods=['GET'])
-def index():
-    return render_template('index.html')
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    if request.method == 'POST':
+        query = 'UPDATE user SET first_name=:first_name, last_name=:last_name, birth_date=:birth_date WHERE username=:username;'
+        params = {
+            'first_name': request.form.get('first_name'),
+            'last_name': request.form.get('last_name'),
+            'birth_date': request.form.get('birth_date'),
+            'username': session['username']
+        }
+        try:
+            g.db.execute(query, params)
+            g.db.commit()
+        except sqlite3.IntegrityError:
+            flash('Something went wrong while updating your profile', 'danger')
+        else:
+            flash('Your profile was correctly updated', 'success')
+
+    cursor = g.db.execute(
+        'SELECT username, first_name, last_name, birth_date FROM user WHERE username=:username;',
+        {'username': session['username']})
+    username, first_name, last_name, birth_date = cursor.fetchone()
+    return render_template('profile.html', username=username, first_name=first_name,
+                           last_name=last_name, birth_date=birth_date)
