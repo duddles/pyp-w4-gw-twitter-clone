@@ -35,7 +35,7 @@ def login_required(f):
     
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    print 'url = {}'.format(request.url_root)
+    #print 'url = {}'.format(request.url_root)
     # check if already logged in
     # if already logged in send them to user feed page
     if 'username' in session:
@@ -90,7 +90,7 @@ def profile():
         except:
             flash('Your profile was not updated')
         
-    print 'we are in profile with session user name = {}'.format(session['username'])
+    #print 'we are in profile with session user name = {}'.format(session['username'])
     sql_command = 'SELECT first_name, last_name, birth_date FROM user WHERE id = ?;'
     cursor = g.db.execute(sql_command, [session['user_id']])
     first_name, last_name, birth_date = cursor.fetchone()
@@ -101,19 +101,19 @@ def profile():
 #@app.route('/own_feed', methods=['GET', 'POST'])
 #def own_feed():
 def feed(username):
-    print 'We are entering feed with username = {}'.format(username)
+    #print 'We are entering feed with username = {}'.format(username)
     
     # strange bug where at the end of profile it was doing a GET request on styles.css
     # which was leading to /favicon.ico so it was coming here with 
     # username = favicon.ico ... how do we avoid this?
     if username == 'favicon.ico': 
-        print 'got here'
+        #print 'got here'
         return redirect(url_for('profile'))
-    if 'username' not in session:
-        print 'no username'
-    else:
-        print 'has username = {}'.format(session['username'])
-        print 'has userid = {}'.format(session['user_id'])
+    #if 'username' not in session:
+        #print 'no username'
+    #else:
+        #print 'has username = {}'.format(session['username'])
+        #print 'has userid = {}'.format(session['user_id'])
     if request.method == 'POST': # submitting a tweet
         if 'username' not in session:
             return redirect('/'), 403
@@ -140,7 +140,7 @@ def feed(username):
     
 
 def feed_data(user_name):
-    print 'Feed_data was called with user_name {}'.format(user_name)
+    #print 'Feed_data was called with user_name {}'.format(user_name)
     template_data = []
     # actually I stored session[user_id] so we could could skip next line
     tweet_id = g.db.execute('select id from user where username = ?',
