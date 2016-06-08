@@ -45,7 +45,8 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        password = md5(b'{}'.format(password)).hexdigest()
+        password = password.encode('utf-8')
+        password = md5(password).hexdigest()
         cursor = g.db.execute('SELECT id, username, password FROM user;')
         user_data = cursor.fetchall() # list of tuples 
         for user_tuple in user_data:
