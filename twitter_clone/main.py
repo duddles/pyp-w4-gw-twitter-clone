@@ -5,8 +5,8 @@ from hashlib import md5
 from functools import wraps
 from flask import Flask
 from flask import (g, request, session, redirect, render_template,
-                   flash, url_for)
-import sys
+                   flash, url_for, send_from_directory)
+
 app = Flask(__name__)
 
 def connect_db(db_name):
@@ -24,22 +24,13 @@ def login_required(f): # decorator to make sure someone is logged in
         return f(*args, **kwargs)
     return decorated_function
     
-    
-'''
-Issue with get request trying to access favicon.ico
-Relevant post about it: https://www.reddit.com/r/learnpython/comments/1hsxxy/
-Still not sure best way to deal with it though
-Also weird that in twitter_feed I am checking about the favicon and redirecting - but the
-redirect doesn't seem to work?
-'''
-    
 # Login page
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     # if already logged in send them to user feed page by way of the '/'
     # doing this to follow what the test has
     if 'username' in session:
-          return redirect('/')
+          return redirect(url_for('index'))
           
     if request.method == 'POST': # they entered username and password
         username = request.form['username']
@@ -48,15 +39,14 @@ def login():
         password = md5(password).hexdigest() # http://pythoncentral.io/hashing-strings-with-python/
         
         # check the db for matching username/password
-        # cursor = g.db.execute('SELECT id, username, password FROM user')
-        # user_data = cursor.fetchall() # list of tuples 
         users = g.db.execute('SELECT id, username, password FROM user')
         for user in users:
             if username == user[1] and password == user[2]:
                 # set the session variables
                 session['username'] = username
                 session['user_id'] = user[0]
-                return redirect('/')
+                #return redirect('/')
+                return redirect(url_for('index'))
         
         flash('Invalid username or password') 
     return render_template('login.html')
@@ -92,14 +82,10 @@ def profile():
 # Twitter feed page
 @app.route('/<username>', methods=['GET', 'POST'])
 def twitter_feed(username):
-    
-    if username == 'favicon.ico': 
-        print('We have a username of favicon.ico')
-        return redirect('/') # this line doesn't seem to actually have an effect? confused...
   
     if request.method == 'POST': # submitting a tweet
         if 'username' not in session: # for test conditions
-            return redirect('/'), 403
+            return redirect(url_for('index')), 403
             
         tweet = request.form.get('tweet') # 'tweet' comes from the html field name
         
@@ -151,7 +137,7 @@ def delete_tweet(tweet_id):
     g.db.execute(sql_command, [tweet_id])
     g.db.commit()
     flash('Tweet was deleted')
-    return redirect('/')
+    return redirect(url_for('index'))
 
 # Logout
 @app.route('/logout')
@@ -162,7 +148,7 @@ def logout():
    session.pop('user_id', None)
    
    # but if they logout from another page do we want to return them to that page?
-   return redirect('/')
+   return redirect(url_for('index'))
 
 # Index site will either send to login or to that person's tweets   
 @app.route('/', methods=['GET'])
